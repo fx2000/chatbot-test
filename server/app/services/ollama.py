@@ -56,6 +56,35 @@ class OllamaService:
         response.raise_for_status()
         return response.json()
 
+    async def generate_title(self, model: str, messages: list[dict]) -> str:
+        """
+        Ask the LLM to generate a short title for a conversation.
+
+        Sends the first exchange along with a system prompt instructing
+        the model to produce a concise title (max 5 words).
+        Returns the generated title string.
+        """
+        title_messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Generate a very short title (maximum 5 words) that summarizes "
+                    "the following conversation. Reply ONLY with the title, no quotes, "
+                    "no punctuation, no explanation."
+                ),
+            },
+            *messages,
+        ]
+        payload = {
+            "model": model,
+            "messages": title_messages,
+            "stream": False,
+        }
+        response = await self._client.post("/api/chat", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        return data["message"]["content"].strip()
+
     async def chat(self, model: str, messages: list[dict]) -> dict:
         """
         Send a chat request to Ollama and return the full response.

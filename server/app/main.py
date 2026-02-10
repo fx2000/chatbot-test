@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import chat, health, models
+from app.routes import chat, health, models, conversations
 from app.services.ollama import ollama_service
+from app.database import init_db, engine
+import app.models  # noqa: F401 -- ensure models are registered with Base before create_all
 
 
 @asynccontextmanager
@@ -25,10 +27,13 @@ async def lifespan(app: FastAPI):
     # --- Startup ---
     # The ollama_service client is already created, nothing extra to do.
     print(f"🚀 Server starting. Ollama URL: {ollama_service._client.base_url}")
+    await init_db()
+    print("✅ Database tables created / verified.")
     yield
     # --- Shutdown ---
     await ollama_service._client.aclose()
-    print("👋 Server shutting down. Ollama client closed.")
+    await engine.dispose()
+    print("👋 Server shutting down. Ollama client and DB engine closed.")
 
 
 # Create the FastAPI app -- this is like `const app = express()` in Express.
@@ -60,6 +65,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(models.router, prefix="/api", tags=["Models"])
+app.include_router(conversations.router, prefix="/api", tags=["Conversations"])
 
 
 @app.get("/")

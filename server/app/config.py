@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     that all required values are present and correctly typed.
     """
 
-    ollama_base_url: str = "http://localhost:11434"
+    ollama_base_url: str
+    database_url: str
 
     class Config:
         env_file = ".env"
